@@ -1,0 +1,58 @@
+# Configuration Render pour LangGraph
+# Copiez ce fichier vers render.yaml et ajustez selon vos besoins
+
+services:
+  # Service web principal - LangGraph API
+  - type: web
+    name: langgraph-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free  # Changez en 'starter' ($7/mois) pour éviter l'endormissement
+    region: oregon  # Choisissez: oregon, frankfurt, singapore, ohio, virginia
+    envVars:
+      # Postgres - Render remplira automatiquement depuis la base de données
+      - key: DATABASE_URI
+        fromDatabase:
+          name: langgraph-postgres
+          property: connectionString
+      
+      # Redis - Render remplira automatiquement depuis le service Redis
+      - key: REDIS_URI
+        fromService:
+          name: langgraph-redis
+          type: redis
+          property: connectionString
+      
+      # LangSmith API Key - À définir manuellement dans le dashboard Render
+      # Allez dans votre service → Environment → Add Environment Variable
+      - key: LANGSMITH_API_KEY
+        sync: false
+      
+      # Port - Render définit automatiquement PORT, mais vous pouvez le forcer
+      - key: PORT
+        value: 10000
+      
+      # Optionnel : Tracing LangSmith
+      - key: LANGSMITH_TRACING
+        value: "true"
+      
+      # Optionnel : Nom du projet LangSmith
+      - key: LANGSMITH_PROJECT
+        value: "langgraph-render"
+
+# Base de données Postgres
+databases:
+  - name: langgraph-postgres
+    databaseName: langgraph
+    user: langgraph
+    plan: free  # Gratuit 90 jours, puis $7/mois
+    postgresMajorVersion: 16
+    region: oregon  # Même région que le service web
+
+# Service Redis
+redis:
+  - name: langgraph-redis
+    plan: free  # Gratuit permanent (25 MB)
+    region: oregon  # Même région que le service web
+
